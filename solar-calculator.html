@@ -445,6 +445,116 @@
 
   .note-box strong { color: var(--accent-2); }
 
+  /* Formula section */
+  .formula-section {
+    margin-top: 24px;
+  }
+
+  .formula-group {
+    background: var(--panel-light);
+    border-radius: 14px;
+    border: 1px solid var(--border);
+    margin-bottom: 16px;
+    overflow: hidden;
+  }
+
+  .formula-group-header {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 14px 18px;
+    cursor: pointer;
+    user-select: none;
+    transition: background 0.2s;
+  }
+
+  .formula-group-header:hover { background: rgba(255,255,255,0.03); }
+
+  .formula-group-icon { font-size: 1.4rem; }
+
+  .formula-group-title {
+    font-family: 'Rajdhani', sans-serif;
+    font-size: 1.05rem;
+    font-weight: 600;
+    letter-spacing: 0.5px;
+    flex: 1;
+  }
+
+  .fg-solar .formula-group-title { color: var(--sun); }
+  .fg-battery .formula-group-title { color: var(--accent); }
+  .fg-inverter .formula-group-title { color: var(--accent-2); }
+  .fg-cc .formula-group-title { color: #A78BFA; }
+
+  .formula-toggle {
+    color: var(--text-muted);
+    font-size: 0.85rem;
+    transition: transform 0.3s;
+  }
+
+  .formula-group-body {
+    padding: 0 18px 18px;
+    display: block;
+  }
+
+  .formula-step {
+    margin-bottom: 16px;
+  }
+
+  .formula-step:last-child { margin-bottom: 0; }
+
+  .formula-step-label {
+    font-size: 0.75rem;
+    color: var(--text-muted);
+    letter-spacing: 0.5px;
+    font-weight: 600;
+    margin-bottom: 8px;
+    text-transform: uppercase;
+  }
+
+  .formula-box {
+    background: var(--dark);
+    border-radius: 10px;
+    padding: 14px 16px;
+    border-left: 3px solid;
+    font-family: 'Courier New', monospace;
+    font-size: 0.88rem;
+    line-height: 1.9;
+  }
+
+  .fg-solar .formula-box { border-color: var(--sun); }
+  .fg-battery .formula-box { border-color: var(--accent); }
+  .fg-inverter .formula-box { border-color: var(--accent-2); }
+  .fg-cc .formula-box { border-color: #A78BFA; }
+
+  .f-label { color: var(--text-muted); font-size: 0.82rem; }
+  .f-formula { color: #CBD5E1; }
+  .f-equals { color: var(--text-muted); }
+  .f-substitution { color: #FDE68A; }
+  .f-result {
+    font-weight: 700;
+    font-size: 1rem;
+  }
+  .fg-solar .f-result { color: var(--sun); }
+  .fg-battery .f-result { color: var(--accent); }
+  .fg-inverter .f-result { color: var(--accent-2); }
+  .fg-cc .f-result { color: #A78BFA; }
+
+  .f-note {
+    font-family: 'Sarabun', sans-serif;
+    font-size: 0.78rem;
+    color: var(--text-muted);
+    margin-top: 6px;
+    padding: 6px 10px;
+    background: rgba(255,255,255,0.03);
+    border-radius: 6px;
+  }
+
+  .divider {
+    height: 1px;
+    background: var(--border);
+    margin: 12px 0;
+  }
+
   /* Empty state */
   .empty-hint {
     text-align: center;
@@ -594,6 +704,13 @@
       </div>
 
       <div class="note-box" id="noteBox"></div>
+    </div>
+
+    <!-- Formula breakdown -->
+    <div class="card">
+      <div class="card-title">④ สูตรและการแทนค่า</div>
+      <p style="font-size:0.85rem;color:var(--text-muted);margin-bottom:20px;">แสดงสูตรคำนวณแต่ละขั้นตอนพร้อมการแทนค่าจริงจากข้อมูลที่กรอก</p>
+      <div id="formulaSection"></div>
     </div>
 
     <!-- Device breakdown -->
@@ -845,9 +962,160 @@ function calculate() {
     • <strong>Charge Controller:</strong> แนะนำ MPPT สำหรับระบบที่มีประสิทธิภาพสูงกว่า PWM
   `;
 
+  // Render formulas
+  renderFormulas({
+    totalW, totalWh, whNeeded, sunHours, reserveDays,
+    dod: dod*100, efficiency: efficiency*100,
+    panelWatt, panelsNeeded, battAh, battsNeeded,
+    totalBattAh, battWhNeeded, totalWhReserve,
+    battWhPerUnit, invSize, panelCurrent, ccSize
+  });
+
   const resultsEl = document.getElementById('results');
   resultsEl.style.display = 'block';
   setTimeout(() => resultsEl.scrollIntoView({ behavior: 'smooth', block: 'start' }), 100);
+}
+
+function n(v, dec=2) { return parseFloat(v).toFixed(dec); }
+
+function fBox(lines) {
+  return `<div class="formula-box">${lines.map(l => `<div>${l}</div>`).join('')}</div>`;
+}
+
+function fRow(label, formula, substitution, result, note='') {
+  return `
+    <div class="formula-step">
+      <div class="formula-step-label">${label}</div>
+      ${fBox([
+        `<span class="f-label">สูตร :</span>  <span class="f-formula">${formula}</span>`,
+        `<span class="f-label">แทนค่า:</span>  <span class="f-substitution">${substitution}</span>`,
+        `<span class="f-label">= </span>  <span class="f-result">${result}</span>`
+      ])}
+      ${note ? `<div class="f-note">💡 ${note}</div>` : ''}
+    </div>`;
+}
+
+function fGroup(id, cls, icon, title, content) {
+  return `
+    <div class="formula-group ${cls}" id="fg-${id}">
+      <div class="formula-group-header" onclick="toggleFG('${id}')">
+        <span class="formula-group-icon">${icon}</span>
+        <span class="formula-group-title">${title}</span>
+        <span class="formula-toggle" id="ft-${id}">▼</span>
+      </div>
+      <div class="formula-group-body" id="fb-${id}">
+        ${content}
+      </div>
+    </div>`;
+}
+
+function toggleFG(id) {
+  const body = document.getElementById('fb-' + id);
+  const tog = document.getElementById('ft-' + id);
+  const open = body.style.display !== 'none';
+  body.style.display = open ? 'none' : 'block';
+  tog.style.transform = open ? 'rotate(-90deg)' : 'rotate(0deg)';
+}
+
+function renderFormulas(v) {
+  // 1. Total energy per day
+  const deviceLines = devices.map(d =>
+    `  ${d.name || 'อุปกรณ์'}: ${d.watt}W × ${d.qty} × ${d.hrs}h = ${(d.watt*d.qty*d.hrs).toFixed(0)} Wh`
+  ).join('<br>');
+
+  const solarContent = `
+    ${fRow(
+      'ขั้นที่ 1 — พลังงานรวมที่ใช้ต่อวัน (E_load)',
+      'E_load = Σ (W × จำนวน × ชั่วโมง/วัน)',
+      `<br>${deviceLines}<br>รวม`,
+      `${n(v.totalWh, 0)} Wh/วัน`,
+      'รวมพลังงานทุกอุปกรณ์ที่ใช้ในหนึ่งวัน'
+    )}
+    <div class="divider"></div>
+    ${fRow(
+      'ขั้นที่ 2 — พลังงานที่แผงต้องผลิต (E_solar) รวม System Loss',
+      'E_solar = E_load ÷ η_system',
+      `${n(v.totalWh, 0)} ÷ ${n(v.efficiency/100, 2)}`,
+      `${n(v.whNeeded, 0)} Wh/วัน`,
+      `η_system = ${n(v.efficiency, 0)}% หมายถึงประสิทธิภาพรวมของระบบ (Inverter loss + สายไฟ + ฯลฯ)`
+    )}
+    <div class="divider"></div>
+    ${fRow(
+      'ขั้นที่ 3 — จำนวนแผงโซลาร์ที่ต้องการ',
+      'จำนวนแผง = ⌈ E_solar ÷ (W_panel × PSH) ⌉',
+      `⌈ ${n(v.whNeeded, 0)} ÷ (${v.panelWatt} × ${v.sunHours}) ⌉`,
+      `⌈ ${n(v.whNeeded/(v.panelWatt*v.sunHours), 2)} ⌉ = <strong>${v.panelsNeeded} แผง</strong>`,
+      `PSH (Peak Sun Hours) = ${v.sunHours} ชม./วัน | ปัดขึ้นเสมอเพื่อให้ได้พลังงานครบ`
+    )}`;
+
+  const battContent = `
+    ${fRow(
+      'ขั้นที่ 1 — พลังงานสำรองที่ต้องการ (E_reserve)',
+      'E_reserve = E_load × วันสำรอง',
+      `${n(v.totalWh, 0)} × ${v.reserveDays}`,
+      `${n(v.totalWhReserve, 0)} Wh`,
+      `สำรองพลังงานไว้ ${v.reserveDays} วัน กรณีแสงแดดไม่เพียงพอ`
+    )}
+    <div class="divider"></div>
+    ${fRow(
+      'ขั้นที่ 2 — ความจุแบตรวมที่ต้องการ (C_batt) คำนึง DoD',
+      'C_batt = E_reserve ÷ DoD',
+      `${n(v.totalWhReserve, 0)} ÷ ${n(v.dod/100, 2)}`,
+      `${n(v.battWhNeeded, 0)} Wh`,
+      `DoD ${v.dod}% = ใช้งานได้สูงสุด ${v.dod}% ของความจุ เพื่อยืดอายุแบต`
+    )}
+    <div class="divider"></div>
+    ${fRow(
+      'ขั้นที่ 3 — ความจุต่อลูกในหน่วย Wh',
+      'Wh_per_batt = Ah × Voltage (12V)',
+      `${v.battAh} × 12`,
+      `${n(v.battWhPerUnit, 0)} Wh / ลูก`,
+      'แบตเตอรี่ 12V ความจุจริงคือ Ah × 12 โวลต์'
+    )}
+    <div class="divider"></div>
+    ${fRow(
+      'ขั้นที่ 4 — จำนวนแบตเตอรี่ที่ต้องการ',
+      'จำนวนแบต = ⌈ C_batt ÷ Wh_per_batt ⌉',
+      `⌈ ${n(v.battWhNeeded, 0)} ÷ ${n(v.battWhPerUnit, 0)} ⌉`,
+      `⌈ ${n(v.battWhNeeded/v.battWhPerUnit, 2)} ⌉ = <strong>${v.battsNeeded} ลูก</strong>`,
+      `ความจุรวม = ${v.battsNeeded} × ${v.battAh}Ah = ${v.totalBattAh}Ah`
+    )}`;
+
+  const invContent = `
+    ${fRow(
+      'คำนวณขนาด Inverter (W)',
+      'Inverter = ⌈ W_load × Safety Factor ⌉ → ปัดเป็นร้อย',
+      `⌈ ${n(v.totalW, 0)} × 1.25 ⌉`,
+      `⌈ ${n(v.totalW * 1.25, 0)} ⌉ → <strong>${v.invSize} W</strong>`,
+      'Safety Factor 1.25 = 25% เผื่อ Inrush Current จากมอเตอร์หรืออุปกรณ์ที่สตาร์ทตัว | เลือก Pure Sine Wave สำหรับอุปกรณ์ sensitive'
+    )}`;
+
+  const ccContent = `
+    ${fRow(
+      'ขั้นที่ 1 — กระแสรวมจากแผงโซลาร์ (I_panel)',
+      'I_panel = (จำนวนแผง × W_panel) ÷ V_system',
+      `(${v.panelsNeeded} × ${v.panelWatt}) ÷ 12`,
+      `${n(v.panelCurrent, 2)} A`,
+      'ในระบบ 12V : กำลังไฟ (W) ÷ แรงดัน (V) = กระแส (A)'
+    )}
+    <div class="divider"></div>
+    ${fRow(
+      'ขั้นที่ 2 — ขนาด Charge Controller ที่เหมาะสม',
+      'CC = ⌈ I_panel × 1.25 ⌉ → ปัดเป็น 10',
+      `⌈ ${n(v.panelCurrent, 2)} × 1.25 ⌉`,
+      `⌈ ${n(v.panelCurrent * 1.25, 2)} ⌉ → <strong>${v.ccSize} A</strong>`,
+      'เผื่อกระแส 25% เพื่อความปลอดภัยและอายุการใช้งาน | แนะนำ MPPT มีประสิทธิภาพสูงกว่า PWM 15–30%'
+    )}`;
+
+  const html = `
+    <div class="formula-section">
+      ${fGroup('solar', 'fg-solar', '☀️', 'แผงโซลาร์ — Solar Panels', solarContent)}
+      ${fGroup('battery', 'fg-battery', '🔋', 'แบตเตอรี่ — Battery Bank', battContent)}
+      ${fGroup('inverter', 'fg-inverter', '⚙️', 'อินเวอร์เตอร์ — Inverter', invContent)}
+      ${fGroup('cc', 'fg-cc', '🔌', 'ตัวควบคุมการชาร์จ — Charge Controller', ccContent)}
+    </div>`;
+
+  document.getElementById('formulaSection').innerHTML = html;
 }
 
 // Init with 2 example devices
