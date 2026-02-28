@@ -1,0 +1,858 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Solar 12V Calculator</title>
+<link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@300;400;600;700&family=Rajdhani:wght@500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --sun: #F59E0B;
+    --sun-light: #FDE68A;
+    --dark: #0F1923;
+    --panel: #1A2B3C;
+    --panel-light: #243447;
+    --accent: #10B981;
+    --accent-2: #3B82F6;
+    --danger: #EF4444;
+    --text: #E2E8F0;
+    --text-muted: #94A3B8;
+    --border: rgba(255,255,255,0.08);
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    background: var(--dark);
+    color: var(--text);
+    font-family: 'Sarabun', sans-serif;
+    min-height: 100vh;
+    overflow-x: hidden;
+  }
+
+  /* Animated background */
+  body::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    background: 
+      radial-gradient(ellipse 80% 50% at 50% -20%, rgba(245,158,11,0.15) 0%, transparent 60%),
+      radial-gradient(ellipse 60% 40% at 80% 100%, rgba(16,185,129,0.08) 0%, transparent 50%);
+    pointer-events: none;
+    z-index: 0;
+  }
+
+  .container {
+    max-width: 1000px;
+    margin: 0 auto;
+    padding: 24px 16px 80px;
+    position: relative;
+    z-index: 1;
+  }
+
+  /* Header */
+  header {
+    text-align: center;
+    padding: 40px 0 48px;
+  }
+
+  .sun-icon {
+    width: 72px;
+    height: 72px;
+    margin: 0 auto 16px;
+    position: relative;
+    animation: spin 20s linear infinite;
+  }
+
+  .sun-core {
+    width: 40px;
+    height: 40px;
+    background: radial-gradient(circle, #FDE68A, #F59E0B);
+    border-radius: 50%;
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    box-shadow: 0 0 30px rgba(245,158,11,0.6);
+  }
+
+  .sun-ray {
+    position: absolute;
+    width: 8px;
+    height: 16px;
+    background: linear-gradient(to bottom, #F59E0B, transparent);
+    border-radius: 4px;
+    top: 50%;
+    left: 50%;
+    transform-origin: 4px 36px;
+  }
+
+  @keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
+
+  h1 {
+    font-family: 'Rajdhani', sans-serif;
+    font-size: 2.8rem;
+    font-weight: 700;
+    letter-spacing: 2px;
+    line-height: 1;
+    background: linear-gradient(135deg, #FDE68A 0%, #F59E0B 50%, #10B981 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+  }
+
+  .subtitle {
+    color: var(--text-muted);
+    font-size: 1rem;
+    margin-top: 8px;
+    font-weight: 300;
+    letter-spacing: 1px;
+  }
+
+  /* Section cards */
+  .card {
+    background: var(--panel);
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    padding: 28px;
+    margin-bottom: 20px;
+    backdrop-filter: blur(10px);
+  }
+
+  .card-title {
+    font-family: 'Rajdhani', sans-serif;
+    font-size: 1.2rem;
+    font-weight: 600;
+    letter-spacing: 1px;
+    color: var(--sun);
+    margin-bottom: 20px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+
+  .card-title::before {
+    content: '';
+    width: 4px;
+    height: 18px;
+    background: var(--sun);
+    border-radius: 2px;
+    display: block;
+  }
+
+  /* Device list */
+  .device-list {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    margin-bottom: 16px;
+  }
+
+  .device-row {
+    display: grid;
+    grid-template-columns: 1fr 110px 80px 80px auto;
+    gap: 10px;
+    align-items: center;
+    background: var(--panel-light);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 12px 14px;
+    animation: slideIn 0.3s ease;
+  }
+
+  @keyframes slideIn {
+    from { opacity: 0; transform: translateY(-10px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+
+  .device-row label {
+    font-size: 0.75rem;
+    color: var(--text-muted);
+    margin-bottom: 4px;
+    display: block;
+  }
+
+  .device-row input, .device-row select {
+    width: 100%;
+    background: var(--dark);
+    border: 1px solid rgba(255,255,255,0.1);
+    border-radius: 8px;
+    color: var(--text);
+    font-family: 'Sarabun', sans-serif;
+    font-size: 0.9rem;
+    padding: 7px 10px;
+    outline: none;
+    transition: border-color 0.2s;
+  }
+
+  .device-row input:focus, .device-row select:focus {
+    border-color: var(--sun);
+  }
+
+  .device-row input[type="number"]::-webkit-inner-spin-button { opacity: 0.5; }
+
+  .watt-display {
+    text-align: center;
+    font-family: 'Rajdhani', sans-serif;
+    font-size: 1.1rem;
+    font-weight: 600;
+    color: var(--accent);
+  }
+
+  .watt-display span {
+    font-size: 0.7rem;
+    color: var(--text-muted);
+    display: block;
+    font-family: 'Sarabun', sans-serif;
+    font-weight: 400;
+  }
+
+  .btn-remove {
+    background: none;
+    border: 1px solid rgba(239,68,68,0.3);
+    color: var(--danger);
+    width: 34px;
+    height: 34px;
+    border-radius: 8px;
+    cursor: pointer;
+    font-size: 1.1rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.2s;
+    flex-shrink: 0;
+  }
+
+  .btn-remove:hover {
+    background: rgba(239,68,68,0.15);
+    border-color: var(--danger);
+  }
+
+  .btn-add {
+    background: linear-gradient(135deg, rgba(245,158,11,0.15), rgba(245,158,11,0.05));
+    border: 1px dashed rgba(245,158,11,0.4);
+    color: var(--sun);
+    border-radius: 10px;
+    padding: 12px;
+    font-family: 'Sarabun', sans-serif;
+    font-size: 0.95rem;
+    cursor: pointer;
+    width: 100%;
+    transition: all 0.2s;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+  }
+
+  .btn-add:hover {
+    background: linear-gradient(135deg, rgba(245,158,11,0.25), rgba(245,158,11,0.1));
+    border-color: var(--sun);
+  }
+
+  /* Settings grid */
+  .settings-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 16px;
+  }
+
+  .field {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+  }
+
+  .field label {
+    font-size: 0.8rem;
+    color: var(--text-muted);
+    font-weight: 600;
+    letter-spacing: 0.5px;
+  }
+
+  .field input, .field select {
+    background: var(--panel-light);
+    border: 1px solid rgba(255,255,255,0.1);
+    border-radius: 10px;
+    color: var(--text);
+    font-family: 'Sarabun', sans-serif;
+    font-size: 0.95rem;
+    padding: 10px 14px;
+    outline: none;
+    transition: border-color 0.2s;
+  }
+
+  .field input:focus, .field select:focus { border-color: var(--accent-2); }
+
+  .field .hint {
+    font-size: 0.72rem;
+    color: var(--text-muted);
+    opacity: 0.7;
+  }
+
+  /* Summary load */
+  .load-summary {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    background: linear-gradient(135deg, rgba(245,158,11,0.1), transparent);
+    border: 1px solid rgba(245,158,11,0.2);
+    border-radius: 10px;
+    padding: 14px 18px;
+    margin-top: 16px;
+  }
+
+  .load-summary .label { font-size: 0.85rem; color: var(--text-muted); }
+  .load-summary .value { 
+    font-family: 'Rajdhani', sans-serif; 
+    font-size: 1.6rem; 
+    font-weight: 700; 
+    color: var(--sun);
+  }
+
+  /* Calculate button */
+  .btn-calc {
+    width: 100%;
+    padding: 18px;
+    background: linear-gradient(135deg, #F59E0B, #D97706);
+    border: none;
+    border-radius: 14px;
+    color: #0F1923;
+    font-family: 'Rajdhani', sans-serif;
+    font-size: 1.3rem;
+    font-weight: 700;
+    letter-spacing: 2px;
+    cursor: pointer;
+    transition: all 0.2s;
+    box-shadow: 0 8px 32px rgba(245,158,11,0.3);
+    margin-top: 8px;
+  }
+
+  .btn-calc:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 12px 40px rgba(245,158,11,0.45);
+  }
+
+  .btn-calc:active { transform: translateY(0); }
+
+  /* Results */
+  #results {
+    display: none;
+    animation: fadeUp 0.5s ease;
+  }
+
+  @keyframes fadeUp {
+    from { opacity: 0; transform: translateY(20px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+
+  .result-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+    gap: 16px;
+    margin-bottom: 20px;
+  }
+
+  .result-card {
+    background: var(--panel-light);
+    border-radius: 14px;
+    padding: 22px;
+    text-align: center;
+    border: 1px solid var(--border);
+    position: relative;
+    overflow: hidden;
+    transition: transform 0.2s;
+  }
+
+  .result-card:hover { transform: translateY(-3px); }
+
+  .result-card::before {
+    content: '';
+    position: absolute;
+    top: 0; left: 0; right: 0;
+    height: 3px;
+  }
+
+  .result-card.solar::before { background: linear-gradient(90deg, #F59E0B, #FDE68A); }
+  .result-card.battery::before { background: linear-gradient(90deg, #10B981, #6EE7B7); }
+  .result-card.inverter::before { background: linear-gradient(90deg, #3B82F6, #93C5FD); }
+  .result-card.charge::before { background: linear-gradient(90deg, #8B5CF6, #C4B5FD); }
+
+  .result-icon { font-size: 2.4rem; margin-bottom: 10px; }
+  .result-label { font-size: 0.8rem; color: var(--text-muted); margin-bottom: 6px; letter-spacing: 0.5px; }
+  .result-value {
+    font-family: 'Rajdhani', sans-serif;
+    font-size: 2.2rem;
+    font-weight: 700;
+    line-height: 1;
+  }
+  .result-card.solar .result-value { color: var(--sun); }
+  .result-card.battery .result-value { color: var(--accent); }
+  .result-card.inverter .result-value { color: var(--accent-2); }
+  .result-card.charge .result-value { color: #A78BFA; }
+
+  .result-unit { font-size: 1rem; font-weight: 500; color: var(--text-muted); margin-left: 4px; }
+  .result-sub { font-size: 0.78rem; color: var(--text-muted); margin-top: 6px; }
+
+  /* Detail table */
+  .detail-section { margin-top: 4px; }
+  .detail-title {
+    font-family: 'Rajdhani', sans-serif;
+    font-size: 1rem;
+    font-weight: 600;
+    color: var(--text-muted);
+    letter-spacing: 1px;
+    margin-bottom: 12px;
+  }
+
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 0.88rem;
+  }
+
+  th {
+    text-align: left;
+    padding: 8px 12px;
+    color: var(--text-muted);
+    font-weight: 600;
+    font-size: 0.75rem;
+    letter-spacing: 0.5px;
+    border-bottom: 1px solid var(--border);
+  }
+
+  td {
+    padding: 10px 12px;
+    border-bottom: 1px solid rgba(255,255,255,0.04);
+  }
+
+  tr:last-child td { border-bottom: none; }
+  tr:hover td { background: rgba(255,255,255,0.02); }
+
+  .td-watt { color: var(--accent); font-family: 'Rajdhani', sans-serif; font-size: 1rem; font-weight: 600; }
+  .td-total { color: var(--sun); font-family: 'Rajdhani', sans-serif; font-size: 1rem; font-weight: 600; }
+
+  .note-box {
+    background: rgba(59,130,246,0.08);
+    border: 1px solid rgba(59,130,246,0.2);
+    border-radius: 10px;
+    padding: 14px 18px;
+    font-size: 0.83rem;
+    color: var(--text-muted);
+    line-height: 1.8;
+    margin-top: 16px;
+  }
+
+  .note-box strong { color: var(--accent-2); }
+
+  /* Empty state */
+  .empty-hint {
+    text-align: center;
+    color: var(--text-muted);
+    padding: 20px;
+    font-size: 0.85rem;
+    opacity: 0.6;
+  }
+
+  @media (max-width: 640px) {
+    .device-row {
+      grid-template-columns: 1fr 1fr;
+      grid-template-rows: auto auto auto;
+    }
+    .device-row > div:first-child { grid-column: 1 / -1; }
+    h1 { font-size: 2rem; }
+  }
+</style>
+</head>
+<body>
+<div class="container">
+
+  <!-- Header -->
+  <header>
+    <div class="sun-icon">
+      <div class="sun-core"></div>
+      <div class="sun-ray" style="transform: translateX(-4px) translateY(-36px) rotate(0deg)"></div>
+      <div class="sun-ray" style="transform: translateX(-4px) translateY(-36px) rotate(45deg)"></div>
+      <div class="sun-ray" style="transform: translateX(-4px) translateY(-36px) rotate(90deg)"></div>
+      <div class="sun-ray" style="transform: translateX(-4px) translateY(-36px) rotate(135deg)"></div>
+      <div class="sun-ray" style="transform: translateX(-4px) translateY(-36px) rotate(180deg)"></div>
+      <div class="sun-ray" style="transform: translateX(-4px) translateY(-36px) rotate(225deg)"></div>
+      <div class="sun-ray" style="transform: translateX(-4px) translateY(-36px) rotate(270deg)"></div>
+      <div class="sun-ray" style="transform: translateX(-4px) translateY(-36px) rotate(315deg)"></div>
+    </div>
+    <h1>SOLAR CALCULATOR</h1>
+    <p class="subtitle">ระบบโซลาร์เซลล์ 12V — คำนวณขนาดระบบที่เหมาะสม</p>
+  </header>
+
+  <!-- Step 1: Appliances -->
+  <div class="card">
+    <div class="card-title">① รายการอุปกรณ์ไฟฟ้า</div>
+    <div class="device-list" id="deviceList">
+      <!-- devices inserted here -->
+    </div>
+    <p class="empty-hint" id="emptyHint">กดปุ่มด้านล่างเพื่อเพิ่มอุปกรณ์ไฟฟ้า</p>
+    <button class="btn-add" onclick="addDevice()">
+      <span style="font-size:1.3rem">＋</span> เพิ่มอุปกรณ์
+    </button>
+
+    <div class="load-summary">
+      <div>
+        <div class="label">พลังงานรวมต่อวัน</div>
+        <div class="value"><span id="totalWh">0</span> <span style="font-size:1rem;color:var(--text-muted)">Wh/day</span></div>
+      </div>
+      <div style="text-align:right">
+        <div class="label">กำลังรวม (W)</div>
+        <div class="value" style="font-size:1.2rem"><span id="totalW">0</span> W</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Step 2: System Settings -->
+  <div class="card">
+    <div class="card-title">② ตั้งค่าระบบ</div>
+    <div class="settings-grid">
+      <div class="field">
+        <label>จำนวนชั่วโมงแสงแดด (ชม./วัน)</label>
+        <input type="number" id="sunHours" value="5" min="1" max="12" step="0.5" oninput="recalc()">
+        <span class="hint">ประเทศไทย ≈ 4–6 ชม. เฉลี่ย</span>
+      </div>
+      <div class="field">
+        <label>วันสำรองพลังงาน (วัน)</label>
+        <input type="number" id="reserveDays" value="2" min="1" max="7" oninput="recalc()">
+        <span class="hint">จำนวนวันที่ต้องการสำรองไว้</span>
+      </div>
+      <div class="field">
+        <label>Depth of Discharge แบต (%)</label>
+        <input type="number" id="dod" value="50" min="20" max="80" oninput="recalc()">
+        <span class="hint">Lead-acid ≈ 50%, LiFePO4 ≈ 80%</span>
+      </div>
+      <div class="field">
+        <label>ประสิทธิภาพระบบ (%)</label>
+        <input type="number" id="efficiency" value="85" min="70" max="95" oninput="recalc()">
+        <span class="hint">รวม Inverter loss / wiring</span>
+      </div>
+      <div class="field">
+        <label>วัตต์ต่อแผงโซลาร์ (W)</label>
+        <input type="number" id="panelWatt" value="200" min="50" max="500" step="10" oninput="recalc()">
+        <span class="hint">ขนาดแผงที่ต้องการใช้</span>
+      </div>
+      <div class="field">
+        <label>ความจุแบตเตอรี่ (Ah)</label>
+        <input type="number" id="battAh" value="100" min="20" max="500" step="10" oninput="recalc()">
+        <span class="hint">แบตเตอรี่แต่ละลูก (ที่ 12V)</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- Calculate -->
+  <button class="btn-calc" onclick="calculate()">⚡ คำนวณระบบโซลาร์</button>
+
+  <!-- Results -->
+  <div id="results" style="margin-top:20px;">
+    <div class="card">
+      <div class="card-title">③ ผลการคำนวณ</div>
+      <div class="result-grid">
+        <div class="result-card solar">
+          <div class="result-icon">☀️</div>
+          <div class="result-label">SOLAR PANELS</div>
+          <div class="result-value"><span id="rPanels">—</span><span class="result-unit">แผง</span></div>
+          <div class="result-sub" id="rPanelsSub"></div>
+        </div>
+        <div class="result-card battery">
+          <div class="result-icon">🔋</div>
+          <div class="result-label">BATTERY</div>
+          <div class="result-value"><span id="rBatts">—</span><span class="result-unit">ลูก</span></div>
+          <div class="result-sub" id="rBattsSub"></div>
+        </div>
+        <div class="result-card inverter">
+          <div class="result-icon">⚙️</div>
+          <div class="result-label">INVERTER</div>
+          <div class="result-value"><span id="rInv">—</span><span class="result-unit">W</span></div>
+          <div class="result-sub" id="rInvSub"></div>
+        </div>
+        <div class="result-card charge">
+          <div class="result-icon">🔌</div>
+          <div class="result-label">CHARGE CONTROLLER</div>
+          <div class="result-value"><span id="rCC">—</span><span class="result-unit">A</span></div>
+          <div class="result-sub" id="rCCSub"></div>
+        </div>
+      </div>
+
+      <!-- Detail table -->
+      <div class="detail-section">
+        <div class="detail-title">รายละเอียดการคำนวณ</div>
+        <table id="detailTable">
+          <thead>
+            <tr>
+              <th>รายการ</th>
+              <th>ค่าที่ใช้คำนวณ</th>
+              <th>ผลลัพธ์</th>
+            </tr>
+          </thead>
+          <tbody id="detailBody"></tbody>
+        </table>
+      </div>
+
+      <div class="note-box" id="noteBox"></div>
+    </div>
+
+    <!-- Device breakdown -->
+    <div class="card">
+      <div class="card-title">สรุปรายการอุปกรณ์</div>
+      <table id="deviceTable">
+        <thead>
+          <tr>
+            <th>อุปกรณ์</th>
+            <th>W/ชิ้น</th>
+            <th>จำนวน</th>
+            <th>ชม./วัน</th>
+            <th>รวม Wh/วัน</th>
+          </tr>
+        </thead>
+        <tbody id="deviceBody"></tbody>
+      </table>
+    </div>
+  </div>
+
+</div>
+
+<script>
+let devices = [];
+let idCounter = 0;
+
+const PRESETS = [
+  { name: 'หลอด LED 9W', watt: 9 },
+  { name: 'หลอด LED 18W', watt: 18 },
+  { name: 'พัดลมตั้งโต๊ะ', watt: 35 },
+  { name: 'พัดลมตั้งพื้น', watt: 60 },
+  { name: 'ทีวี 32"', watt: 55 },
+  { name: 'ทีวี 43"', watt: 80 },
+  { name: 'ตู้เย็น 5 คิว', watt: 100 },
+  { name: 'ตู้เย็น 8 คิว', watt: 140 },
+  { name: 'เครื่องชาร์จโทรศัพท์', watt: 10 },
+  { name: 'แล็ปท็อป', watt: 65 },
+  { name: 'ปั๊มน้ำ', watt: 150 },
+  { name: 'เครื่องรับ WiFi', watt: 10 },
+  { name: 'กล้องวงจรปิด', watt: 8 },
+  { name: 'อื่นๆ', watt: 0 },
+];
+
+function addDevice(name = '', watt = 0, qty = 1, hrs = 4) {
+  const id = ++idCounter;
+  const device = { id, name, watt, qty, hrs };
+  devices.push(device);
+  renderDevices();
+  updateEmpty();
+  recalc();
+}
+
+function removeDevice(id) {
+  devices = devices.filter(d => d.id !== id);
+  renderDevices();
+  updateEmpty();
+  recalc();
+}
+
+function renderDevices() {
+  const list = document.getElementById('deviceList');
+  list.innerHTML = '';
+  devices.forEach(dev => {
+    const row = document.createElement('div');
+    row.className = 'device-row';
+    row.id = 'dev-' + dev.id;
+
+    // Build preset options
+    let opts = PRESETS.map(p => `<option value="${p.watt}" ${p.name === dev.name ? 'selected' : ''}>${p.name}</option>`).join('');
+
+    row.innerHTML = `
+      <div>
+        <label>ชื่ออุปกรณ์</label>
+        <select onchange="onPreset(${dev.id}, this)">
+          ${opts}
+        </select>
+        <input type="text" placeholder="หรือพิมพ์ชื่อเอง" value="${dev.name}" 
+          style="margin-top:6px;display:${dev.name && !PRESETS.find(p=>p.name===dev.name) ? 'block':'none'}" 
+          id="nameInput-${dev.id}"
+          oninput="updateField(${dev.id}, 'name', this.value)">
+      </div>
+      <div>
+        <label>วัตต์ (W)</label>
+        <input type="number" value="${dev.watt}" min="0" step="1" oninput="updateField(${dev.id}, 'watt', +this.value)">
+      </div>
+      <div>
+        <label>จำนวน</label>
+        <input type="number" value="${dev.qty}" min="1" oninput="updateField(${dev.id}, 'qty', +this.value)">
+      </div>
+      <div>
+        <label>ชม./วัน</label>
+        <input type="number" value="${dev.hrs}" min="0.5" max="24" step="0.5" oninput="updateField(${dev.id}, 'hrs', +this.value)">
+      </div>
+      <div style="text-align:center">
+        <label style="margin-bottom:4px">Wh/วัน</label>
+        <div class="watt-display" id="wh-${dev.id}">
+          ${(dev.watt * dev.qty * dev.hrs).toFixed(0)}
+          <span>Wh</span>
+        </div>
+      </div>
+      <button class="btn-remove" onclick="removeDevice(${dev.id})" title="ลบ">✕</button>
+    `;
+    list.appendChild(row);
+  });
+}
+
+function onPreset(id, sel) {
+  const watt = +sel.value;
+  const name = sel.options[sel.selectedIndex].text;
+  const dev = devices.find(d => d.id === id);
+  if (!dev) return;
+  const nameInput = document.getElementById('nameInput-' + id);
+  if (name === 'อื่นๆ') {
+    nameInput.style.display = 'block';
+    dev.name = '';
+    dev.watt = 0;
+  } else {
+    nameInput.style.display = 'none';
+    dev.name = name;
+    dev.watt = watt;
+    // Update watt input
+    const inputs = document.querySelectorAll(`#dev-${id} input[type="number"]`);
+    if (inputs[0]) inputs[0].value = watt;
+  }
+  updateWh(id);
+  recalc();
+}
+
+function updateField(id, field, val) {
+  const dev = devices.find(d => d.id === id);
+  if (!dev) return;
+  dev[field] = val;
+  updateWh(id);
+  recalc();
+}
+
+function updateWh(id) {
+  const dev = devices.find(d => d.id === id);
+  if (!dev) return;
+  const el = document.getElementById('wh-' + id);
+  if (el) el.innerHTML = `${(dev.watt * dev.qty * dev.hrs).toFixed(0)}<span>Wh</span>`;
+}
+
+function updateEmpty() {
+  document.getElementById('emptyHint').style.display = devices.length === 0 ? 'block' : 'none';
+}
+
+function recalc() {
+  let totalW = 0, totalWh = 0;
+  devices.forEach(d => {
+    totalW += d.watt * d.qty;
+    totalWh += d.watt * d.qty * d.hrs;
+  });
+  document.getElementById('totalW').textContent = totalW.toFixed(0);
+  document.getElementById('totalWh').textContent = totalWh.toFixed(0);
+}
+
+function calculate() {
+  if (devices.length === 0) {
+    alert('กรุณาเพิ่มอุปกรณ์ไฟฟ้าก่อน');
+    return;
+  }
+
+  let totalW = 0, totalWh = 0;
+  devices.forEach(d => {
+    totalW += d.watt * d.qty;
+    totalWh += d.watt * d.qty * d.hrs;
+  });
+
+  const sunHours = +document.getElementById('sunHours').value || 5;
+  const reserveDays = +document.getElementById('reserveDays').value || 2;
+  const dod = +document.getElementById('dod').value / 100 || 0.5;
+  const efficiency = +document.getElementById('efficiency').value / 100 || 0.85;
+  const panelWatt = +document.getElementById('panelWatt').value || 200;
+  const battAh = +document.getElementById('battAh').value || 100;
+
+  // 1. Solar panels
+  const whNeeded = totalWh / efficiency;
+  const dailySolarWh = whNeeded;
+  const panelsNeeded = Math.ceil(dailySolarWh / (panelWatt * sunHours));
+
+  // 2. Battery
+  const totalWhReserve = totalWh * reserveDays;
+  const battWhNeeded = totalWhReserve / dod;
+  const battWhPerUnit = battAh * 12;
+  const battsNeeded = Math.ceil(battWhNeeded / battWhPerUnit);
+  const totalBattAh = battsNeeded * battAh;
+
+  // 3. Inverter (1.25x safety factor)
+  const invSize = Math.ceil(totalW * 1.25 / 100) * 100;
+
+  // 4. Charge controller (panel current + 25%)
+  const panelCurrent = (panelsNeeded * panelWatt) / 12;
+  const ccSize = Math.ceil(panelCurrent * 1.25 / 10) * 10;
+
+  // Display results
+  document.getElementById('rPanels').textContent = panelsNeeded;
+  document.getElementById('rPanelsSub').textContent = `${panelWatt}W × ${panelsNeeded} แผง = ${panelWatt * panelsNeeded}W`;
+
+  document.getElementById('rBatts').textContent = battsNeeded;
+  document.getElementById('rBattsSub').textContent = `${battAh}Ah × ${battsNeeded} ลูก = ${totalBattAh}Ah`;
+
+  document.getElementById('rInv').textContent = invSize;
+  document.getElementById('rInvSub').textContent = `กำลังไฟรวม ${totalW}W + safety 25%`;
+
+  document.getElementById('rCC').textContent = ccSize;
+  document.getElementById('rCCSub').textContent = `กระแสจากแผง ≈ ${panelCurrent.toFixed(1)}A`;
+
+  // Detail table
+  const details = [
+    ['พลังงานใช้จริง/วัน', `${totalWh.toFixed(0)} Wh`, '-'],
+    ['พลังงานที่ต้องผลิต (รวม loss)', `eff. ${(efficiency*100).toFixed(0)}%`, `${whNeeded.toFixed(0)} Wh`],
+    ['แสงแดดที่ใช้ได้', `${sunHours} ชม./วัน`, '-'],
+    ['จำนวนแผงโซลาร์', `${panelWatt}W / แผง`, `${panelsNeeded} แผง`],
+    ['พลังงานสำรองที่ต้องการ', `${reserveDays} วัน`, `${totalWhReserve.toFixed(0)} Wh`],
+    ['ความจุแบตที่ต้องการ', `DoD ${(dod*100).toFixed(0)}%`, `${battWhNeeded.toFixed(0)} Wh`],
+    ['จำนวนแบตเตอรี่', `${battAh}Ah (12V) / ลูก`, `${battsNeeded} ลูก`],
+    ['ขนาด Inverter', `โหลดรวม ${totalW}W ×1.25`, `${invSize} W`],
+    ['ขนาด Charge Controller', `${panelCurrent.toFixed(1)}A ×1.25`, `${ccSize} A`],
+  ];
+
+  const tbody = document.getElementById('detailBody');
+  tbody.innerHTML = details.map((r, i) => `
+    <tr>
+      <td>${r[0]}</td>
+      <td style="color:var(--text-muted)">${r[1]}</td>
+      <td class="${i >= 3 ? 'td-total' : ''}">${r[2]}</td>
+    </tr>
+  `).join('');
+
+  // Device breakdown table
+  const devBody = document.getElementById('deviceBody');
+  devBody.innerHTML = devices.map(d => `
+    <tr>
+      <td>${d.name || 'อุปกรณ์'}</td>
+      <td class="td-watt">${d.watt}</td>
+      <td>${d.qty}</td>
+      <td>${d.hrs}</td>
+      <td class="td-total">${(d.watt * d.qty * d.hrs).toFixed(0)}</td>
+    </tr>
+  `).join('');
+
+  // Note
+  document.getElementById('noteBox').innerHTML = `
+    <strong>หมายเหตุ:</strong> ผลการคำนวณนี้เป็นค่าขั้นต่ำที่แนะนำ ควรเลือกขนาดที่ใหญ่กว่าเล็กน้อยเพื่อความปลอดภัย<br>
+    • <strong>แผงโซลาร์:</strong> ค่าในการผลิตพลังงานอ้างอิงจาก ${sunHours} ชั่วโมงแสงแดดต่อวัน (Peak Sun Hours)<br>
+    • <strong>แบตเตอรี่:</strong> คำนวณสำรองไว้ ${reserveDays} วัน โดยใช้ไม่เกิน ${(dod*100).toFixed(0)}% ของความจุ<br>
+    • <strong>Inverter:</strong> เลือก Pure Sine Wave สำหรับอุปกรณ์ sensitive เช่น TV, แล็ปท็อป<br>
+    • <strong>Charge Controller:</strong> แนะนำ MPPT สำหรับระบบที่มีประสิทธิภาพสูงกว่า PWM
+  `;
+
+  const resultsEl = document.getElementById('results');
+  resultsEl.style.display = 'block';
+  setTimeout(() => resultsEl.scrollIntoView({ behavior: 'smooth', block: 'start' }), 100);
+}
+
+// Init with 2 example devices
+addDevice('หลอด LED 18W', 18, 4, 6);
+addDevice('พัดลมตั้งโต๊ะ', 35, 1, 8);
+</script>
+</body>
+</html>
